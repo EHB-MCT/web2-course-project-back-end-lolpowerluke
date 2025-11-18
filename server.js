@@ -29,8 +29,20 @@ app.get("/api/user", (req, res) => {
   let ID = req.query.id
 }) 
 
-app.get("/api/distro", (req, res) => {
-  let ID = req.query.id
+app.get("/api/distro", async (req, res) => {
+  let findResult;
+  let ID = req.query.id;
+  const collection = database.collection("distros");
+  findResult = await collection.findOne({id: parseInt(ID)});
+  if (findResult != null) {
+    res.status(200).json({
+      "dewm": findResult,
+    })
+  } else {
+    res.status(404).json({
+      "message": `No distro found with id ${ID}`,
+    })
+  }
 }) 
 
 app.get("/api/dewm", async (req, res) => {
