@@ -7,6 +7,7 @@ dotenv.config()
 
 let env = process.env;
 let uri = `mongodb+srv://${env.database_login_name}:${env.database_password}@webii.44euncl.mongodb.net/?appName=WEBII`
+let baseURL = "http://localhost:3000";
 
 const app = express();
 const port = 3000;
@@ -25,7 +26,7 @@ const client = new MongoClient(uri, {
 const database = client.db("project");
 
 // Get
-app.get("/api/user", async (req, res) => {
+let user = app.get("/api/user", async (req, res) => {
   let findResult;
   let ID = req.query.id;
   if (ID == undefined) {
@@ -160,7 +161,61 @@ app.get("/api/quiz", async (req, res) => {
 
 // Post
 app.post("/api/quiz", async (req, res) => {
-  let data = req.body;
+  let data = req.body
+  
+  if (data == undefined) {
+    res.status(422).json({
+      "message": `Body missing!`,
+    })
+  } else {
+    let dataUserID = data.user_id;
+    let dataTestType = data.type;
+    let dataTestResult = data.result;
+    let dataTestScores = data.top_scores;
+
+    if (dataUserID == undefined || dataTestType == undefined || dataTestResult == undefined || dataTestScores == undefined) {
+      res.status(422).json({
+        "message": `Body incomplete!`,
+      })
+    } else {
+      // Get relevant data and create object to be sent
+      const testsCollection = database.collection("tests");
+      let testsQueryTyped = {user_id: parseInt(dataUserID), type: dataTestType.toLowerCase()};
+      let testsFindResultTyped = await testsCollection.findOne(testsQueryTyped, {sort: {user_test_id: -1}, projection: {_id: 0}});
+      let testsFindResultTypeless = await testsCollection.findOne({}, {sort: {id: -1}, projection: {_id: 0}});
+      let responseDataID;
+      if (testsFindResultTypeless != null) {
+        responseDataID = testsFindResultTypeless.id + 1;
+      } else {
+        responseDataID = 1;
+      }
+      let responseDataUserTestID;
+      if (testsFindResultTyped != null) {
+        responseDataUserTestID = testsFindResultTyped.user_test_id + 1;
+      } else {
+        responseDataUserTestID = 1;
+      }
+      let responseData = {
+        id: responseDataID,
+        user_test_id: responseDataUserTestID,
+        user_id: dataUserID,
+        type: dataTestType,
+        result: dataTestResult,
+        top_scores: dataTestScores
+      }
+      const result = await testsCollection.insertOne(responseData);
+      console.log(
+        `A document was inserted with the _id: ${result.insertedId}`,
+      );
+      // update test_amount for user
+      const userFetch = await fetch(baseURL + "/api/user?id=" + dataUserID);
+      const userData = await userFetch.json();
+
+      res.status(200).json({
+        "question": responseData,
+      })
+    }
+  }
 }) 
 
 app.post("/api/user", async (req, res) => {
