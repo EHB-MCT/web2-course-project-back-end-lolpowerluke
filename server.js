@@ -91,7 +91,6 @@ app.get("/api/dewm", async (req, res) => {
   }
 }) 
 
-// has yet to be fully tested since I was too lazy to add example data to the database
 app.get("/api/tests", async (req, res) => {
   let findResult;
   let ID = req.query.id;
@@ -110,15 +109,19 @@ app.get("/api/tests", async (req, res) => {
     })
   } else {
     const collection = database.collection("tests");
-    let query = {id: parseInt(ID), type: TYPE.toLowerCase()}
+    let query = {user_id: parseInt(ID), type: TYPE.toLowerCase()}
     findResult = collection.find(query).project({_id: 0});
     if ((await collection.countDocuments(query)) === 0) {
       res.status(404).json({
         "message": `No tests found with user id ${ID} and type ${TYPE}`,
       })
     } else {
+      let resultArray = [];
+      for await (const item of findResult) {
+        resultArray.push(item)
+      }
       res.status(200).json({
-        "test": findResult,
+        "tests": resultArray,
       })
     }
   }
