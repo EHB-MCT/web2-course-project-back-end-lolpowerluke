@@ -35,7 +35,7 @@ let user = app.get("/api/user", async (req, res) => {
     })
   } else {
     const collection = database.collection("users");
-    findResult = await collection.findOne({id: parseInt(ID)}, {projection: {_id: 0}});
+    findResult = await collection.findOne({id: parseInt(ID)}, {projection: {_id: 0, password: 0}});
     if (findResult != null) {
       res.status(200).json({
         "user": findResult,
