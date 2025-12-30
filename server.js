@@ -37,9 +37,7 @@ let user = app.get("/api/user", async (req, res) => {
     const collection = database.collection("users");
     findResult = await collection.findOne({id: parseInt(ID)}, {projection: {_id: 0, password: 0}});
     if (findResult != null) {
-      res.status(200).json({
-        "user": findResult,
-      })
+      res.status(200).json(findResult)
     } else {
       res.status(404).json({
         "message": `No user found with id ${ID}`,
@@ -59,9 +57,7 @@ app.get("/api/distro", async (req, res) => {
     const collection = database.collection("distros");
     findResult = await collection.findOne({id: parseInt(ID)}, {projection: {_id: 0}});
     if (findResult != null) {
-      res.status(200).json({
-        "distro": findResult,
-      })
+      res.status(200).json(findResult)
     } else {
       res.status(404).json({
         "message": `No distro found with id ${ID}`,
@@ -81,9 +77,7 @@ app.get("/api/dewm", async (req, res) => {
     const collection = database.collection("dewm");
     findResult = await collection.findOne({id: parseInt(ID)}, {projection: {_id: 0}});
     if (findResult != null) {
-      res.status(200).json({
-        "dewm": findResult,
-      })
+      res.status(200).json(findResult)
     } else {
       res.status(404).json({
         "message": `No DE/WM found with id ${ID}`,
@@ -121,9 +115,7 @@ app.get("/api/tests", async (req, res) => {
       for await (const item of findResult) {
         resultArray.push(item)
       }
-      res.status(200).json({
-        "tests": resultArray,
-      })
+      res.status(200).json(resultArray)
     }
   }
 }) 
@@ -148,9 +140,7 @@ app.get("/api/quiz", async (req, res) => {
     const collection = database.collection(TYPE.toLowerCase() + "_test");
     findResult = await collection.findOne({question_number: parseInt(NUMBER)}, {projection: {_id: 0}});
     if (findResult != null) {
-      res.status(200).json({
-        "question": findResult,
-      })
+      res.status(200).json(findResult)
     } else {
       res.status(404).json({
         "message": `No question found with number ${NUMBER}`,
@@ -211,9 +201,7 @@ app.post("/api/quiz", async (req, res) => {
       const userFetch = await fetch(baseURL + "/api/user?id=" + dataUserID);
       const userData = await userFetch.json();
 
-      res.status(200).json({
-        "question": responseData,
-      })
+      res.status(200).json(responseData)
     }
   }
 }) 
