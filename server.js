@@ -208,6 +208,37 @@ app.post("/api/quiz", async (req, res) => {
 
 app.post("/api/user", async (req, res) => {
   let data = req.body;
+  // needs firstname, lastname, birthdate, email, password
+}) 
+
+app.post("/api/login", async (req, res) => {
+  let data = req.body;
+  if (data == undefined) {
+    res.status(422).json({
+      "message": `Body missing!`,
+    })
+  } else {
+    let dataEmail = data.email;
+    let dataPassword = data.password;
+
+    if (dataEmail == undefined || dataPassword == undefined) {
+      res.status(422).json({
+        "message": `Body incomplete!`,
+      })
+    } else {
+      // Get relevant data and create object to be sent
+      const usersCollection = database.collection("users");
+      let userQueryTyped = {email: dataEmail, password: dataPassword};
+      let userFindResult = await usersCollection.findOne(userQueryTyped, {projection: {_id: 0}});
+      console.log(userFindResult);
+      
+      if (userFindResult != null) {
+        res.status(200).json(true);
+      } else {
+        res.status(200).json(false);
+      }
+    }
+  }
 }) 
 
 // Update
