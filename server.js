@@ -231,9 +231,14 @@ app.post("/api/login", async (req, res) => {
       let userQueryTyped = {email: dataEmail, password: dataPassword};
       let userFindResult = await usersCollection.findOne(userQueryTyped, {projection: {_id: 0}});
       if (userFindResult != null) {
-        res.status(200).json(true);
+        res.status(200).json({
+          valid: true,
+          user_id: userFindResult.id
+        });
       } else {
-        res.status(200).json(false);
+        res.status(200).json({
+          valid: false
+        });
       }
     }
   }
