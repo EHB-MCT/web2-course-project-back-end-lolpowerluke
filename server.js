@@ -12,6 +12,7 @@ let baseURL = "http://localhost:3000";
 
 const app = express();
 const port = 3000;
+const saltRounds = 10;
 
 app.use(cors());
 app.use(express.json());
@@ -234,7 +235,41 @@ app.post("/api/quiz", async (req, res) => {
 
 app.post("/api/user", async (req, res) => {
   let data = req.body;
-  // needs firstname, lastname, birthdate, email, password
+  let dataFirstName = data.firstname;
+  let dataLastName = data.lastname;
+  let dataBirthdate = data.birthdate;
+  let dataEmail = data.email;
+  let dataPassword = data.password;
+
+  if (dataFirstName == undefined || dataLastName == undefined || dataBirthdate == undefined || dataEmail == undefined || dataPassword == undefined) {
+    res.status(422).json({
+      message: "Body incomplete!"
+    });
+  } else {
+    const hashedPassword = await bcrypt.hash(dataPassword, saltRounds);
+    const usersCollection = database.collection("users");
+    const lastUser = await usersCollection.find().sort({ id: -1 }).limit(1).toArray();
+    const newId = lastUser.length > 0 ? lastUser[0].id + 1 : 1;
+    const newUser = {
+      id: newId,
+      firstname: dataFirstName,
+      lastname: dataLastName,
+      email: dataEmail,
+      password: hashedPassword,
+      avatar: "",
+      age: dataBirthdate,
+      date_created: new Date().toLocaleString("nl-BE", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false }),
+      current_os: "",
+      current_distro: "",
+      current_dewm: "", 
+      test_amount: {
+        distro: 0,
+        dewm: 0
+      }
+    };
+    await usersCollection.insertOne(newUser);
+    res.send(newUser);
+  }
 }) 
 
 app.post("/api/getscores", async (req, res) => {
@@ -282,36 +317,23 @@ app.post("/api/getscores", async (req, res) => {
 
 app.post("/api/login", async (req, res) => {
   let data = req.body;
-  if (data == undefined) {
-    res.status(422).json({
-      "message": `Body missing!`,
-    })
-  } else {
-    let dataEmail = data.email;
-    let dataPassword = data.password;
-
-    if (dataEmail == undefined || dataPassword == undefined) {
-      res.status(422).json({
-        "message": `Body incomplete!`,
-      })
-    } else {
-      // Get relevant data and create object to be sent
-      const usersCollection = database.collection("users");
-      let userQueryTyped = {email: dataEmail, password: dataPassword};
-      let userFindResult = await usersCollection.findOne(userQueryTyped, {projection: {_id: 0}});
-      if (userFindResult != null) {
-        res.status(200).json({
-          valid: true,
-          user_id: userFindResult.id
-        });
-      } else {
-        res.status(200).json({
-          valid: false
-        });
-      }
-    }
+  if (!data) return res.status(422).json({ message: "Body missing!" });
+  let dataEmail = data.email;
+  let dataPassword = data.password;
+  if (!dataEmail || !dataPassword) return res.status(422).json({ message: "Body incomplete!" });
+  try {
+    const usersCollection = database.collection("users");
+    let userFindResult = await usersCollection.findOne({ email: dataEmail }, { projection: { _id: 0 } });
+    if (!userFindResult) return res.status(200).json({ valid: false });
+    const match = await bcrypt.compare(dataPassword, userFindResult.password);
+    if (match) res.status(200).json({ valid: true, user_id: userFindResult.id });
+    else res.status(200).json({ valid: false });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
-}) 
+});
+
 
 // Update
 app.put("/api/user", async (req, res) => {
