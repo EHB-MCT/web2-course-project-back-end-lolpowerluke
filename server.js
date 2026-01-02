@@ -337,18 +337,59 @@ app.post("/api/login", async (req, res) => {
 
 // Update
 app.put("/api/user", async (req, res) => {
-  let ID = req.query.id
+  let ID = Number(req.query.id);
   let data = req.body;
-}) 
+  if (!ID || !data) return res.status(422).json({ message: "Body or id missing!" });
+  delete data.password;
+  try {
+    const usersCollection = database.collection("users");
+    const result = await usersCollection.updateOne({ id: ID }, { $set: data });
+    if (result.matchedCount === 0) return res.status(404).json({ message: "User not found" });
+    res.status(200).json({ updated: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 // Delete
 app.delete("/api/user", async (req, res) => {
-  let ID = req.query.id
-}) 
+  const ID = req.query.id;
+  if (!ID) {
+    return res.status(422).json({ message: "User ID missing!" });
+  }
+  try {
+    const usersCollection = database.collection("users");
+    const testsCollection = database.collection("tests");
+    const result = await usersCollection.deleteOne({ id: parseInt(ID) });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: "User not found!" });
+    }
+    await testsCollection.deleteMany({ user_id: parseInt(ID) });
+    res.status(200).json({ message: "User deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 app.delete("/api/test", async (req, res) => {
-  let ID = req.query.id
-}) 
+  const ID = req.query.id;
+  if (!ID) {
+    return res.status(422).json({ message: "Test ID missing!" });
+  }
+  try {
+    const testsCollection = database.collection("tests");
+    const result = await testsCollection.deleteOne({ user_test_id: parseInt(ID) });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: "Test not found!" });
+    }
+    res.status(200).json({ message: "Test deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 // Listen
 app.listen(port, () => {
