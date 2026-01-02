@@ -1,4 +1,5 @@
 import express from "express";
+import bcrypt from "bcrypt";
 import cors from "cors";
 import dotenv from "dotenv";
 import { MongoClient, ServerApiVersion } from "mongodb";
@@ -168,10 +169,8 @@ app.post("/api/quiz", async (req, res) => {
         "message": `Body incomplete!`,
       })
     } else {
-      // Get relevant data and create object to be sent
       const testsCollection = database.collection("tests");
-      let testsQueryTyped = {user_id: parseInt(dataUserID), type: dataTestType.toLowerCase()};
-      let testsFindResultTyped = await testsCollection.findOne(testsQueryTyped, {sort: {user_test_id: -1}, projection: {_id: 0}});
+      let testsFindResultTyped = await testsCollection.findOne({user_id: parseInt(dataUserID)}, {sort: {user_test_id: -1}, projection: {_id: 0}});
       let testsFindResultTypeless = await testsCollection.findOne({}, {sort: {id: -1}, projection: {_id: 0}});
       let responseDataID;
       if (testsFindResultTypeless != null) {
@@ -185,18 +184,45 @@ app.post("/api/quiz", async (req, res) => {
       } else {
         responseDataUserTestID = 1;
       }
+      let dataResultObject = {};
+      if (dataTestType == "dewm") {
+        dataResultObject = {
+          dewm_id: dataTestResult.id,
+          score: dataTestResult.score
+        }
+      }
+      if (dataTestType == "distro") {
+        dataResultObject = {
+          distro_id: dataTestResult.id,
+          score: dataTestResult.score
+        }
+      }
+      let dataTopScoresArray = [];
+      if (dataTestType == "dewm") {
+        for (const i of dataTestScores) {
+          dataTopScoresArray.push({
+            score: i.score,
+            dewm_id: i.id
+          })
+        }
+      }
+      if (dataTestType == "distro") {
+        for (const i of dataTestScores) {
+          dataTopScoresArray.push({
+            score: i.score,
+            distro_id: i.id
+          })
+        }
+      }
       let responseData = {
         id: responseDataID,
         user_test_id: responseDataUserTestID,
         user_id: dataUserID,
         type: dataTestType,
-        result: dataTestResult,
-        top_scores: dataTestScores
+        result: dataResultObject,
+        top_scores: dataTopScoresArray
       }
       const result = await testsCollection.insertOne(responseData);
-      console.log(
-        `A document was inserted with the _id: ${result.insertedId}`,
-      );
       // update test_amount for user
       const userFetch = await fetch(baseURL + "/api/user?id=" + dataUserID);
       const userData = await userFetch.json();
@@ -210,6 +236,49 @@ app.post("/api/user", async (req, res) => {
   let data = req.body;
   // needs firstname, lastname, birthdate, email, password
 }) 
+
+app.post("/api/getscores", async (req, res) => {
+  try {
+    let data = req.body;
+    const categoryWeights = data.answers.reduce((acc, answer) => {
+      answer.categories.forEach(category => {
+        acc[category] = (acc[category] || 0) + 1;
+      });
+      return acc;
+    }, {});
+    const allowedCollections = ["distros", "dewm"];
+    if (!allowedCollections.includes(data.type)) {
+      return res.status(400).json({ error: "Invalid type" });
+    }
+    const collection = database.collection(data.type);
+    const findResult = await collection.find().project({ _id: 0 }).toArray();
+    const scored = findResult
+      .map(item => ({
+        ...item,
+        score: (() => {
+          const cats = item.categories || [];
+          if (cats.length === 0) return 0;
+          const total = cats.reduce(
+            (sum, cat) => sum + (categoryWeights[cat] || 0),
+            0
+          );
+          const average = total / cats.length;
+          const scaled = Math.min(average * 2, 10);
+          return Math.round(scaled * 2) / 2;
+        })()
+      }))
+      .sort((a, b) => b.score - a.score);
+    res.status(200).json({
+      best: scored[0],
+      alternatives: scored.slice(1, 5),
+      weights: categoryWeights
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 
 app.post("/api/login", async (req, res) => {
   let data = req.body;
