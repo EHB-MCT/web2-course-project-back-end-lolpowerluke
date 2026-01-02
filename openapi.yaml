@@ -1,0 +1,296 @@
+openapi: 3.0.0
+info:
+  title: WEBII API
+  version: 1.0.0
+  description: API documentation for the backend routes provided
+
+paths:
+  /api/user:
+    get:
+      summary: Get a user by ID
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User found
+        '404':
+          description: User not found
+        '422':
+          description: User ID missing
+        '500':
+          description: Internal server error
+    post:
+      summary: Create a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - firstname
+                - lastname
+                - birthdate
+                - email
+                - password
+              properties:
+                firstname:
+                  type: string
+                lastname:
+                  type: string
+                birthdate:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: User created successfully
+        '422':
+          description: Body incomplete
+        '500':
+          description: Internal server error
+    put:
+      summary: Update a user by ID
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: User updated successfully
+        '404':
+          description: User not found
+        '422':
+          description: Body or ID missing
+        '500':
+          description: Internal server error
+    delete:
+      summary: Delete a user by ID
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User deleted successfully
+        '404':
+          description: User not found
+        '422':
+          description: User ID missing
+        '500':
+          description: Internal server error
+
+  /api/distro:
+    get:
+      summary: Get a distro by ID
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Distro found
+        '404':
+          description: Distro not found
+        '422':
+          description: Distro ID missing
+        '500':
+          description: Internal server error
+
+  /api/dewm:
+    get:
+      summary: Get a DE/WM by ID
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: DE/WM found
+        '404':
+          description: DE/WM not found
+        '422':
+          description: DE/WM ID missing
+        '500':
+          description: Internal server error
+
+  /api/tests:
+    get:
+      summary: Get tests for a user by ID and type
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [dewm, distro]
+      responses:
+        '200':
+          description: Tests found
+        '404':
+          description: No tests found or invalid type
+        '422':
+          description: Missing parameters
+        '500':
+          description: Internal server error
+
+  /api/quiz:
+    get:
+      summary: Get a quiz question by number and type
+      parameters:
+        - name: number
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [dewm, distro]
+      responses:
+        '200':
+          description: Question found
+        '404':
+          description: Question not found or invalid type
+        '422':
+          description: Missing parameters
+        '500':
+          description: Internal server error
+    post:
+      summary: Submit quiz results
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_id
+                - type
+                - result
+                - top_scores
+              properties:
+                user_id:
+                  type: integer
+                type:
+                  type: string
+                  enum: [dewm, distro]
+                result:
+                  type: object
+                top_scores:
+                  type: array
+                  items:
+                    type: object
+      responses:
+        '200':
+          description: Quiz results submitted successfully
+        '422':
+          description: Body missing or incomplete
+        '500':
+          description: Internal server error
+
+  /api/getscores:
+    post:
+      summary: Get scored results based on answers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+                - answers
+              properties:
+                type:
+                  type: string
+                  enum: [dewm, distro]
+                answers:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      categories:
+                        type: array
+                        items:
+                          type: string
+      responses:
+        '200':
+          description: Scored results returned
+        '400':
+          description: Invalid type
+        '422':
+          description: Body missing or incomplete
+        '500':
+          description: Internal server error
+
+  /api/login:
+    post:
+      summary: Log in a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login result returned
+        '422':
+          description: Body missing or incomplete
+        '500':
+          description: Internal server error
+
+  /api/test:
+    delete:
+      summary: Delete a test by user_test_id
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Test deleted successfully
+        '404':
+          description: Test not found
+        '422':
+          description: Test ID missing
+        '500':
+          description: Internal server error
